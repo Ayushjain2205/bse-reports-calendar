@@ -143,22 +143,49 @@ export function parseNewsFeed(xml: string, limit: number): NewsItem[] {
   return items;
 }
 
+const RSS_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+  Accept: "application/rss+xml, application/xml, text/xml, */*",
+  "Accept-Language": "en-IN,en;q=0.9",
+} as const;
+
 export async function fetchGoogleNews(query: string, limit = 10): Promise<NewsItem[]> {
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN:en`;
 
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-      Accept: "application/rss+xml, application/xml, text/xml, */*",
-    },
-  });
+  const res = await fetch(url, { headers: RSS_HEADERS });
 
   if (!res.ok) {
     throw new Error(`Google News responded with ${res.status}`);
   }
 
   return parseNewsFeed(await res.text(), limit);
+}
+
+/** Bing News RSS — used when Google blocks Cloudflare egress IPs (often 503). */
+export async function fetchBingNews(query: string, limit = 10): Promise<NewsItem[]> {
+  const url = `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss&setmkt=en-IN&setlang=en`;
+
+  const res = await fetch(url, { headers: RSS_HEADERS });
+
+  if (!res.ok) {
+    throw new Error(`Bing News responded with ${res.status}`);
+  }
+
+  return parseNewsFeed(await res.text(), limit);
+}
+
+/**
+ * Prefer Google News; fall back to Bing when Google rate-limits or blocks
+ * datacenter IPs (common on Cloudflare Workers).
+ */
+export async function fetchNewsRss(query: string, limit = 10): Promise<NewsItem[]> {
+  try {
+    return await fetchGoogleNews(query, limit);
+  } catch (error) {
+    console.warn("Google News failed, falling back to Bing", error);
+    return await fetchBingNews(query, limit);
+  }
 }
 
 const BROWSER_UA =

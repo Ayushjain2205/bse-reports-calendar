@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { fetchBseCalendar } from "./bse.server";
-import { buildNewsQueries, fetchGoogleNews, isRelevant, resolveNewsItems } from "./news.server";
+import { buildNewsQueries, fetchNewsRss, isRelevant, resolveNewsItems } from "./news.server";
 import { calendarInput, newsInput } from "./market-schemas";
 import type { ResultEvent } from "./bse.server";
 import type { NewsItem } from "./news.server";
@@ -43,7 +43,7 @@ export const getCompanyNews = createServerFn({ method: "GET" })
     try {
       for (const query of queries) {
         usedQuery = query;
-        const raw = await fetchGoogleNews(query, 60);
+        const raw = await fetchNewsRss(query, 60);
         const relevant = raw.filter((item) => isRelevant(item.headline, data.company));
         if (relevant.length === 0) continue;
         return {

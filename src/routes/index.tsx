@@ -269,7 +269,7 @@ function ResultsRadar() {
         )}
 
         <p className="mt-12 text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-          Calendar from bseindia.com · headlines from Google News · cached in your browser only
+          Calendar from bseindia.com · headlines from news RSS · cached in your browser only
         </p>
       </main>
     </div>
